@@ -8,9 +8,9 @@
 <style>
 :root{--bg:#07111e;--panel:#0d1b2c;--panel2:#10243a;--line:#25415d;--ink:#eef7ff;--muted:#a7bbd0;--cyan:#62e4ff;--blue:#5595ff;--gold:#ffd078;--pink:#ff83b7;--green:#8be6bd}
 *{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:78px}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.7 Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;overflow-x:hidden}
-#backdrop{position:fixed;inset:0;z-index:-2;pointer-events:none;background:radial-gradient(ellipse at 15% 10%,#143c5a 0,transparent 38%),radial-gradient(ellipse at 85% 45%,#15294e 0,transparent 38%),linear-gradient(150deg,#07111e,#09192a 55%,#07111e)}
-#stars{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.55}
-.glow{position:fixed;width:34rem;height:34rem;border-radius:50%;filter:blur(90px);opacity:.13;pointer-events:none;z-index:-1;background:#26bfe9;left:65%;top:15%;transform:translate3d(0,var(--scroll,0px),0)}
+#backdrop{position:fixed;inset:-8%;z-index:-3;pointer-events:none;background:radial-gradient(ellipse at 14% 12%,#174b70 0,transparent 38%),radial-gradient(ellipse at 84% 38%,#24265d 0,transparent 40%),radial-gradient(ellipse at 52% 100%,#073b4b 0,transparent 42%),linear-gradient(145deg,#050b18 0%,#091a31 48%,#07101f 100%);transform:scale(var(--bg-zoom,1));will-change:transform;transition:transform .12s linear}
+#stars{position:fixed;inset:0;z-index:-2;pointer-events:none;opacity:.95;width:100%;height:100%}
+.glow{position:fixed;width:38rem;height:38rem;border-radius:50%;filter:blur(105px);opacity:.19;pointer-events:none;z-index:-1;background:radial-gradient(circle,#28c8f4 0%,#4b68e8 38%,transparent 70%);left:60%;top:12%;transform:translate3d(0,var(--scroll,0px),0);mix-blend-mode:screen}
 nav{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;padding:12px clamp(16px,5vw,64px);background:#07111edb;backdrop-filter:blur(18px);border-bottom:1px solid #ffffff14}
 .brand{font-weight:850;letter-spacing:.02em}.brand span{color:var(--cyan)}nav a{color:var(--muted);text-decoration:none;font-size:13px;margin-left:16px}nav a:hover{color:var(--cyan)}
 .wrap{width:min(1080px,calc(100% - 36px));margin:auto}.hero{min-height:82vh;display:grid;align-items:center;padding:70px 0 60px;position:relative}.eyebrow{display:inline-flex;gap:9px;align-items:center;border:1px solid #62e4ff55;border-radius:99px;padding:5px 12px;color:var(--cyan);font-size:12px;letter-spacing:.12em;text-transform:uppercase;background:#62e4ff0c}
@@ -82,10 +82,37 @@ footer{padding:35px 0 55px;color:var(--muted);text-align:center;border-top:1px s
 <footer><div class="wrap">PHYSICS / LAB · Projectile Motion Study Guide<br>Learn the model, understand the assumptions, and practise the equations.</div></footer>
 <script>
 (()=> {
-const canvas=document.getElementById('stars'),ctx=canvas.getContext('2d');let stars=[];
-function size(){canvas.width=innerWidth*devicePixelRatio;canvas.height=innerHeight*devicePixelRatio;ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);stars=Array.from({length:75},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight,r:Math.random()*1.5+.3,s:Math.random()*.18+.04}))}
-function paint(){ctx.clearRect(0,0,innerWidth,innerHeight);let scroll=scrollY;for(const p of stars){let y=(p.y-scroll*p.s*.5)%(innerHeight+10);if(y<0)y+=innerHeight+10;ctx.beginPath();ctx.arc(p.x,y,p.r,0,Math.PI*2);ctx.fillStyle='rgba(174,226,255,.7)';ctx.fill() }requestAnimationFrame(paint)}
-size();addEventListener('resize',size);requestAnimationFrame(paint);
+const canvas=document.getElementById('stars'),ctx=canvas.getContext('2d');
+let stars=[],w=innerWidth,h=innerHeight,dpr=1,scrollAmount=0,zoom=1;
+function size(){
+ dpr=Math.min(devicePixelRatio||1,2);w=innerWidth;h=innerHeight;
+ canvas.width=w*dpr;canvas.height=h*dpr;canvas.style.width=w+'px';canvas.style.height=h+'px';
+ ctx.setTransform(dpr,0,0,dpr,0,0);
+ const count=Math.min(150,Math.max(75,Math.round(w*h/8500)));
+ stars=Array.from({length:count},()=>({x:Math.random()*w,y:Math.random()*h,r:Math.random()*1.55+.45,phase:Math.random()*Math.PI*2,speed:Math.random()*.018+.006,drift:(Math.random()-.5)*.12}));
+}
+function paint(){
+ ctx.clearRect(0,0,w,h);
+ const maxScroll=Math.max(1,document.documentElement.scrollHeight-innerHeight);
+ const targetZoom=1+Math.min(.48,Math.max(0,scrollAmount/maxScroll)*.48);
+ zoom+=(targetZoom-zoom)*.075;
+ const t=performance.now()*.001;
+ ctx.save();ctx.translate(w/2,h/2);ctx.scale(zoom,zoom);ctx.translate(-w/2,-h/2);
+ const points=stars.map(p=>({x:p.x+Math.sin(t*p.speed*5+p.phase)*13+p.drift*t*7,y:p.y+Math.cos(t*p.speed*4+p.phase)*10,r:p.r,alpha:.45+.55*(.5+.5*Math.sin(t*1.8+p.phase))}));
+ // Delicate constellation lines connect nearby stars.
+ for(let i=0;i<points.length;i++)for(let j=i+1;j<points.length;j++){
+  const a=points[i],b=points[j],dist=Math.hypot(a.x-b.x,a.y-b.y);
+  if(dist<128){ctx.strokeStyle=`rgba(104,190,255,${(1-dist/128)*.20*Math.min(a.alpha,b.alpha)})`;ctx.lineWidth=.7;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}
+ }
+ for(const p of points){
+  const r=p.r*(.85+p.alpha*.35);
+  ctx.beginPath();ctx.arc(p.x,p.y,r*3.8,0,Math.PI*2);ctx.fillStyle=`rgba(61,174,255,${.045*p.alpha})`;ctx.fill();
+  ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.fillStyle=`rgba(218,244,255,${.38+.58*p.alpha})`;ctx.fill();
+  if(p.r>1.35){ctx.strokeStyle=`rgba(175,228,255,${.22*p.alpha})`;ctx.lineWidth=.65;ctx.beginPath();ctx.moveTo(p.x-r*3.5,p.y);ctx.lineTo(p.x+r*3.5,p.y);ctx.moveTo(p.x,p.y-r*3.5);ctx.lineTo(p.x,p.y+r*3.5);ctx.stroke();}
+ }
+ ctx.restore();document.documentElement.style.setProperty('--bg-zoom',zoom.toFixed(3));requestAnimationFrame(paint);
+}
+size();addEventListener('resize',size);addEventListener('scroll',()=>{scrollAmount=scrollY},{passive:true});requestAnimationFrame(paint);
 const progress=document.getElementById('progress'),glow=document.getElementById('glow');
 addEventListener('scroll',()=>{let max=document.documentElement.scrollHeight-innerHeight;progress.style.width=(max?scrollY/max*100:0)+'%';glow.style.setProperty('--scroll',(scrollY*.12)+'px')},{passive:true});
 const observer=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');observer.unobserve(e.target)}}),{threshold:.12});document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
