@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>3D Projectile Motion Lab</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#07111f;color:#eef7ff;font:15px system-ui,-apple-system,Segoe UI,sans-serif}
+header{padding:16px 18px 12px;background:linear-gradient(120deg,#12304c,#07111f)}h1{font-size:21px;margin:0 0 5px}header p{margin:0;color:#afc3d8;font-size:13px}
+#stage{height:43vh;min-height:280px;position:relative;background:radial-gradient(ellipse at 50% 48%,#244a68,#0b1b2c 70%);overflow:hidden}
+canvas{width:100%;height:100%;display:block;touch-action:none}.hint{position:absolute;top:10px;left:12px;padding:6px 9px;border-radius:8px;background:#07111fc9;border:1px solid #38536e;color:#c9dced;font-size:11px}
+main{max-width:850px;margin:auto;padding:12px}.panel{background:#101e30;border:1px solid #29405a;border-radius:14px;padding:13px;margin-bottom:11px}
+h2{font-size:15px;margin:0 0 10px}.controls{display:grid;grid-template-columns:1fr 1fr;gap:12px}.control label{display:flex;justify-content:space-between;gap:6px;color:#cbd9e8;font-size:13px}.control output{color:#55dcff;font-weight:700;white-space:nowrap}input{width:100%;accent-color:#42d9ff;margin:10px 0 0}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}button{padding:10px 13px;border:1px solid #385574;border-radius:9px;background:#1b3450;color:white;font-weight:650}button.primary{background:#087eaa;border-color:#24bce8}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stat{background:#091827;border:1px solid #203851;border-radius:9px;padding:9px}.stat small{display:block;color:#9fb4ca;font-size:11px}.stat strong{font-size:16px;font-variant-numeric:tabular-nums}
+.note{color:#9fb4ca;font-size:12px;line-height:1.5}.legend{font-size:12px;color:#b5c7d9;margin-top:9px}
+@media(max-width:430px){.panel{padding:11px}.stats{gap:6px}.stat{padding:7px}.stat strong{font-size:14px}}
+</style></head><body>
+<header><h1>🚀 3D Projectile Motion Lab</h1><p>Change launch speed, angle and gravity. Watch the ball follow its trajectory.</p></header>
+<div id="stage"><canvas id="scene"></canvas><div class="hint">Drag to rotate view · Pinch to zoom</div></div>
+<main>
+<section class="panel"><h2>Simulation controls</h2><div class="controls">
+<div class="control"><label>Launch speed <output id="sv">20 m/s</output></label><input id="speed" type="range" min="5" max="50" value="20"></div>
+<div class="control"><label>Launch angle <output id="av">45°</output></label><input id="angle" type="range" min="5" max="85" value="45"></div>
+<div class="control"><label>Gravity <output id="gv">9.8 m/s²</output></label><input id="gravity" type="range" min="1" max="25" value="9.8" step=".1"></div>
+<div class="control"><label>Simulation pace <output id="pv">1.0×</output></label><input id="pace" type="range" min=".2" max="2" value="1" step=".1"></div>
+</div><div class="actions"><button class="primary" id="play">▶ Play</button><button id="reset">↺ Reset</button><button id="home">◎ Reset view</button></div>
+<p class="note">Ideal physics model: air resistance is ignored. The perspective drawing gives a 3D-style view; the motion is calculated in a vertical plane.</p></section>
+<section class="panel"><h2>Live measurements</h2><div class="stats">
+<div class="stat"><small>Horizontal range</small><strong id="range">— m</strong></div><div class="stat"><small>Maximum height</small><strong id="height">— m</strong></div><div class="stat"><small>Flight time</small><strong id="flight">— s</strong></div>
+<div class="stat"><small>Horizontal velocity</small><strong id="vx">— m/s</strong></div><div class="stat"><small>Vertical velocity</small><strong id="vy">— m/s</strong></div><div class="stat"><small>Elapsed time</small><strong id="elapsed">0.00 s</strong></div>
+</div><div class="legend">🔵 Trajectory &nbsp; 🟡 Velocity vector &nbsp; 🔴 Gravity vector</div></section>
+</main>
+<script>
+(()=>{
+const c=document.getElementById('scene'),ctx=c.getContext('2d');
+const $=id=>document.getElementById(id);
+let t=0,running=false,last=0,yaw=-.28,zoom=1,drag=null;
+function P(){let v=+$('speed').value,a=+$('angle').value*Math.PI/180,g=+$('gravity').value;let vx=v*Math.cos(a),vy=v*Math.sin(a),T=2*vy/g,R=vx*T,H=vy*vy/(2*g);return{v,a,g,vx,vy,T,R,H,pace:+$('pace').value}}
+function project(x,y,z=0){let cy=Math.cos(yaw),sy=Math.sin(yaw),xx=x*cy-z*sy,zz=x*sy+z*cy;let s=Math.min(c.clientWidth,c.clientHeight)*.72*zoom;let scale=s/(1+zz*.012);return{x:c.width*.13+xx*scale*.055,y:c.height*.82-y*scale*.055+zz*scale*.018,scale}}
+function line(a,b,color,w=2){ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle=color;ctx.lineWidth=w;ctx.stroke()}
+function arrow(a,b,color){line(a,b,color,3);let ang=Math.atan2(b.y-a.y,b.x-a.x);ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.lineTo(b.x-10*Math.cos(ang-.5),b.y-10*Math.sin(ang-.5));ctx.lineTo(b.x-10*Math.cos(ang+.5),b.y-10*Math.sin(ang+.5));ctx.closePath();ctx.fillStyle=color;ctx.fill()}
+function ball(at){let r=Math.max(7,at.scale*.018);let g=ctx.createRadialGradient(at.x-r*.35,at.y-r*.4,1,at.x,at.y,r);g.addColorStop(0,'#e7fbff');g.addColorStop(.22,'#55e1ff');g.addColorStop(.7,'#0786c1');g.addColorStop(1,'#063b67');ctx.beginPath();ctx.arc(at.x,at.y,r,0,Math.PI*2);ctx.fillStyle=g;ctx.shadowColor='#38cfff';ctx.shadowBlur=18;ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='#b8f3ff';ctx.lineWidth=1.5;ctx.stroke()}
+function draw(){
+ let dpr=Math.min(devicePixelRatio||1,2),w=c.clientWidth,h=c.clientHeight;if(c.width!==Math.round(w*dpr)||c.height!==Math.round(h*dpr)){c.width=Math.round(w*dpr);c.height=Math.round(h*dpr)}ctx.setTransform(dpr,0,0,dpr,0,0);
+ let W=w,Hh=h;ctx.clearRect(0,0,W,Hh);
+ let p=P();let ground0=project(0,0,0),groundR=project(p.R*1.12,0,0);
+ // ground plane grid
+ for(let i=0;i<=10;i++){let x=p.R*i/10;line(project(x,0,-9),project(x,0,9),'rgba(116,174,210,.19)',1)}
+ for(let z=-9;z<=9;z+=3)line(project(0,0,z),project(p.R*1.12,0,z),'rgba(116,174,210,.19)',1);
+ line(project(0,0,0),groundR,'#8ca9c2',2);
+ // axis labels
+ ctx.fillStyle='#b5c9dc';ctx.font='11px system-ui';ctx.fillText('X — horizontal distance',Math.min(W-150,groundR.x-105),Math.min(Hh-8,groundR.y+28));
+ ctx.fillText('Y — height',12,22);
+ // trajectory curve
+ ctx.beginPath();for(let i=0;i<=120;i++){let tt=p.T*i/120,x=p.vx*tt,y=p.vy*tt-.5*p.g*tt*tt,q=project(x,y,0);if(i===0)ctx.moveTo(q.x,q.y);else ctx.lineTo(q.x,q.y)}ctx.strokeStyle='#42d9ff';ctx.lineWidth=3;ctx.shadowColor='#42d9ff';ctx.shadowBlur=8;ctx.stroke();ctx.shadowBlur=0;
+ let qtime=Math.min(t,p.T),x=p.vx*qtime,y=Math.max(0,p.vy*qtime-.5*p.g*qtime*qtime),at=project(x,y,0);
+ // launch point and impact marker
+ let start=project(0,0,0),end=project(p.R,0,0);ctx.fillStyle='#f4c75e';ctx.beginPath();ctx.arc(end.x,end.y,5,0,Math.PI*2);ctx.fill();
+ // launch pedestal
+ ctx.fillStyle='#9ab1c5';ctx.fillRect(start.x-9,start.y-5,18,9);
+ ball(at);
+ let vy=p.vy-p.g*qtime;arrow(at,project(x+p.vx*.22,y+vy*.22,0),'#ffcf59');arrow(project(x,y+1.6,0),project(x,y+.45,0),'#ff647e');
+ // peak marker
+ let peak=project(p.R/2,p.H,0);ctx.fillStyle='#c7f6ff';ctx.font='11px system-ui';ctx.fillText('MAX HEIGHT',Math.min(W-90,peak.x+8),peak.y-10);
+ $('sv').textContent=p.v+' m/s';$('av').textContent=$('angle').value+'°';$('gv').textContent=p.g.toFixed(1)+' m/s²';$('pv').textContent=p.pace.toFixed(1)+'×';
+ $('range').textContent=p.R.toFixed(2)+' m';$('height').textContent=p.H.toFixed(2)+' m';$('flight').textContent=p.T.toFixed(2)+' s';$('vx').textContent=p.vx.toFixed(2)+' m/s';$('vy').textContent=vy.toFixed(2)+' m/s';$('elapsed').textContent=qtime.toFixed(2)+' s';
+}
+function frame(now){if(running){if(!last)last=now;t+=(now-last)/1000*P().pace;if(t>=P().T){t=P().T;running=false;$('play').textContent='▶ Play'}}last=now;draw();requestAnimationFrame(frame)}
+function reset(){t=0;running=false;last=0;$('play').textContent='▶ Play';draw()}
+['speed','angle','gravity','pace'].forEach(id=>$(id).addEventListener('input',reset));
+$('play').onclick=()=>{if(!running&&t>=P().T)t=0;running=!running;last=0;$('play').textContent=running?'Ⅱ Pause':'▶ Play'};
+$('reset').onclick=reset;$('home').onclick=()=>{yaw=-.28;zoom=1;draw()};
+c.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY};c.setPointerCapture(e.pointerId)});
+c.addEventListener('pointermove',e=>{if(drag){yaw+=(e.clientX-drag.x)*.008;zoom=Math.max(.55,Math.min(1.8,zoom+(e.clientY-drag.y)*-.003));drag={x:e.clientX,y:e.clientY};draw()}});
+c.addEventListener('pointerup',()=>drag=null);c.addEventListener('pointercancel',()=>drag=null);
+draw();requestAnimationFrame(frame);
+})();
+</script></body></html>
