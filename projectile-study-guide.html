@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#07111e">
+<title>Projectile Motion — The Complete Study Guide</title>
+<style>
+:root{--bg:#07111e;--panel:#0d1b2c;--panel2:#10243a;--line:#25415d;--ink:#eef7ff;--muted:#a7bbd0;--cyan:#62e4ff;--blue:#5595ff;--gold:#ffd078;--pink:#ff83b7;--green:#8be6bd}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:78px}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.7 Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;overflow-x:hidden}
+#backdrop{position:fixed;inset:0;z-index:-2;pointer-events:none;background:radial-gradient(ellipse at 15% 10%,#143c5a 0,transparent 38%),radial-gradient(ellipse at 85% 45%,#15294e 0,transparent 38%),linear-gradient(150deg,#07111e,#09192a 55%,#07111e)}
+#stars{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.55}
+.glow{position:fixed;width:34rem;height:34rem;border-radius:50%;filter:blur(90px);opacity:.13;pointer-events:none;z-index:-1;background:#26bfe9;left:65%;top:15%;transform:translate3d(0,var(--scroll,0px),0)}
+nav{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;padding:12px clamp(16px,5vw,64px);background:#07111edb;backdrop-filter:blur(18px);border-bottom:1px solid #ffffff14}
+.brand{font-weight:850;letter-spacing:.02em}.brand span{color:var(--cyan)}nav a{color:var(--muted);text-decoration:none;font-size:13px;margin-left:16px}nav a:hover{color:var(--cyan)}
+.wrap{width:min(1080px,calc(100% - 36px));margin:auto}.hero{min-height:82vh;display:grid;align-items:center;padding:70px 0 60px;position:relative}.eyebrow{display:inline-flex;gap:9px;align-items:center;border:1px solid #62e4ff55;border-radius:99px;padding:5px 12px;color:var(--cyan);font-size:12px;letter-spacing:.12em;text-transform:uppercase;background:#62e4ff0c}
+h1{font-size:clamp(42px,8vw,86px);line-height:1.02;letter-spacing:-.055em;margin:22px 0 18px;max-width:850px}h1 em{font-style:normal;color:var(--cyan);text-shadow:0 0 35px #62e4ff40}.lead{font-size:clamp(17px,2.2vw,21px);color:#c0d0e1;max-width:720px}
+.hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px}.btn{display:inline-block;text-decoration:none;padding:11px 18px;border-radius:12px;font-weight:750;border:1px solid #4d7999;color:var(--ink);background:#102840}.btn.primary{background:linear-gradient(110deg,#26a9d3,#3979d9);border:0;color:#03111e;box-shadow:0 10px 35px #279bc544}
+.hero-art{margin-top:48px;border:1px solid #4e789655;border-radius:22px;background:linear-gradient(135deg,#10243abf,#091727d9);overflow:hidden;box-shadow:0 25px 90px #0005}
+.hero-art svg{width:100%;height:auto;display:block}.orbit{stroke-dasharray:8 10;animation:dash 22s linear infinite}.moving-dot{animation:travel 5s ease-in-out infinite alternate;filter:drop-shadow(0 0 9px #62e4ff)}
+@keyframes dash{to{stroke-dashoffset:-360}}@keyframes travel{from{transform:translate(0,0)}to{transform:translate(390px,-145px)}}
+section{padding:55px 0;border-top:1px solid #ffffff12}.section-kicker{color:var(--cyan);font-size:12px;text-transform:uppercase;letter-spacing:.16em;font-weight:800}h2{font-size:clamp(27px,4vw,42px);line-height:1.15;letter-spacing:-.035em;margin:8px 0 16px}h3{font-size:19px;margin:0 0 9px}.muted{color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.card{background:linear-gradient(145deg,#10243adf,#0b1929e8);border:1px solid var(--line);border-radius:17px;padding:20px;box-shadow:0 12px 40px #0002;transition:transform .25s,border-color .25s}.card:hover{transform:translateY(-4px);border-color:#62e4ff88}.formula{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:clamp(16px,2.5vw,21px);color:var(--gold);background:#071522;border:1px solid #30455a;border-radius:12px;padding:13px 15px;margin:12px 0;overflow-wrap:anywhere}.tag{display:inline-block;font-size:11px;color:var(--cyan);background:#62e4ff12;border:1px solid #62e4ff35;padding:3px 8px;border-radius:99px;margin:0 5px 5px 0}
+.callout{border-left:3px solid var(--cyan);background:#62e4ff0c;padding:14px 17px;border-radius:0 12px 12px 0;color:#d4e4f2;margin:16px 0}
+ul,ol{padding-left:22px;color:#c5d5e4}li{margin:6px 0}.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px}table{border-collapse:collapse;width:100%;min-width:540px;background:#0c1b2b}td,th{text-align:left;padding:12px 14px;border-bottom:1px solid #ffffff12}th{color:var(--cyan);font-size:13px;background:#10263c}td{color:#c9d8e6}
+.example-step{padding:12px 0;border-bottom:1px solid #ffffff12}.example-step:last-child{border:0}.number{display:inline-grid;place-items:center;width:27px;height:27px;border-radius:8px;background:#62e4ff18;color:var(--cyan);font-weight:800;margin-right:8px}
+.diagram-label{font-size:13px;fill:#d9eaff}.diagram-line{stroke:#62e4ff;stroke-width:3;fill:none}.diagram-grid{stroke:#55718c;stroke-opacity:.3}
+.quiz-option{display:block;width:100%;text-align:left;margin:8px 0;padding:12px 14px;border-radius:10px;background:#0a1928;border:1px solid #2a4560;color:var(--ink);font:inherit;cursor:pointer}.quiz-option:hover{border-color:var(--cyan)}.quiz-option.correct{border-color:var(--green);background:#8be6bd16}.quiz-option.wrong{border-color:var(--pink);background:#ff83b714}#feedback{min-height:28px;color:var(--gold);font-size:14px;margin-top:8px}
+footer{padding:35px 0 55px;color:var(--muted);text-align:center;border-top:1px solid #ffffff12;font-size:13px}
+.reveal{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s ease}.reveal.visible{opacity:1;transform:none}
+.progress{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,var(--cyan),var(--blue));z-index:40;width:0}
+@media(max-width:680px){nav{padding:10px 14px}nav .links{display:none}.hero{min-height:auto;padding:70px 0 42px}.grid{grid-template-columns:1fr}.card{padding:17px}section{padding:42px 0}.hero-art{margin-top:32px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation:none!important;transition:none!important}.reveal{opacity:1;transform:none}}
+</style></head>
+<body>
+<div id="backdrop"></div><canvas id="stars"></canvas><div class="glow" id="glow"></div><div class="progress" id="progress"></div>
+<nav><div class="brand">PHYSICS<span> / LAB</span></div><div class="links"><a href="#basics">Basics</a><a href="#equations">Equations</a><a href="#examples">Example</a><a href="#quiz">Quiz</a></div></nav>
+<header class="hero wrap">
+<div><span class="eyebrow">Complete learning guide · Mechanics</span><h1>Understand the arc.<br><em>Master projectile motion.</em></h1><p class="lead">A visual, step-by-step guide to how objects move through the air — from the first launch to the landing point. Learn the concepts, equations, graphs and problem-solving method.</p><div class="hero-actions"><a class="btn primary" href="#basics">Start learning ↓</a><a class="btn" href="#quiz">Test your knowledge</a></div>
+<div class="hero-art"><svg viewBox="0 0 900 330" role="img" aria-label="Projectile follows a curved parabolic path with horizontal and vertical velocity components">
+<defs><linearGradient id="path" x1="0" x2="1"><stop stop-color="#62e4ff"/><stop offset="1" stop-color="#5595ff"/></linearGradient><radialGradient id="ball"><stop stop-color="#fff"/><stop offset=".3" stop-color="#8cf0ff"/><stop offset="1" stop-color="#1686c5"/></radialGradient></defs>
+<g class="diagram-grid"><path d="M35 270H865M35 220H865M35 170H865M35 120H865M35 70H865" /><path d="M100 35V290M200 35V290M300 35V290M400 35V290M500 35V290M600 35V290M700 35V290M800 35V290"/></g>
+<path d="M85 270 Q 440 -80 800 270" class="diagram-line" stroke="url(#path)"/>
+<path d="M85 270 Q 440 -80 800 270" class="orbit" fill="none" stroke="#b4f4ff" stroke-width="1.4" opacity=".6"/>
+<path d="M85 270H815" stroke="#8aa8c2" stroke-width="2"/><path d="M85 270V42" stroke="#8aa8c2" stroke-width="2"/>
+<circle cx="85" cy="270" r="9" fill="url(#ball)"/><circle cx="800" cy="270" r="7" fill="#ffd078"/>
+<circle class="moving-dot" cx="85" cy="270" r="9" fill="url(#ball)"/>
+<path d="M250 120h90m-10 -7 10 7-10 7" stroke="#ffd078" stroke-width="3" fill="none"/><path d="M250 120v-58m-7 10 7-10 7 10" stroke="#ff83b7" stroke-width="3" fill="none"/>
+<text x="350" y="114" class="diagram-label">Horizontal velocity (vₓ)</text><text x="270" y="50" class="diagram-label">Vertical velocity (vᵧ)</text><text x="92" y="255" class="diagram-label">Launch</text><text x="750" y="255" class="diagram-label">Landing</text><text x="450" y="310" class="diagram-label">Horizontal distance</text><text x="28" y="35" class="diagram-label">Height</text>
+</svg></div></div></header>
+<main class="wrap">
+<section id="basics" class="reveal"><span class="section-kicker">01 · Foundations</span><h2>What is a projectile?</h2><p class="muted">A <strong>projectile</strong> is an object that is given an initial velocity and then moves through the air under the influence of gravity alone, when air resistance is neglected. The motion of such an object is called <strong>projectile motion</strong>.</p>
+<div class="grid"><article class="card"><span class="tag">Definition</span><h3>Projectile motion</h3><p class="muted">It is the curved, two-dimensional motion of an object launched into the air. Near Earth's surface, its ideal path is a parabola.</p></article><article class="card"><span class="tag">Examples</span><h3>Everyday examples</h3><ul><li>A ball thrown at an angle</li><li>A basketball shot toward a hoop</li><li>Water flowing from a fountain</li><li>A long-jump athlete in flight</li></ul></article></div>
+<div class="callout"><strong>Important:</strong> A projectile does not need to be moving upward. After reaching its highest point, it is still a projectile while it falls.</div></section>
+<section class="reveal"><span class="section-kicker">02 · The two motions</span><h2>One journey, two independent directions</h2><div class="grid">
+<article class="card"><h3 style="color:var(--cyan)">Horizontal motion</h3><p class="muted">In the ideal model, no horizontal force acts, so horizontal acceleration is zero and horizontal velocity stays constant.</p><div class="formula">aₓ = 0&nbsp;&nbsp; and &nbsp;&nbsp;vₓ = u cos θ</div></article>
+<article class="card"><h3 style="color:var(--pink)">Vertical motion</h3><p class="muted">Gravity acts downward, so vertical acceleration is constant and equal to −g if upward is positive.</p><div class="formula">aᵧ = −g&nbsp;&nbsp; and &nbsp;&nbsp;vᵧ = u sin θ − gt</div></article></div>
+<p class="muted">The horizontal and vertical motions happen at the same time. The horizontal position depends on time, and the vertical position also depends on that same time.</p></section>
+<section id="equations" class="reveal"><span class="section-kicker">03 · Formula toolkit</span><h2>Important projectile equations</h2><p class="muted">For a launch speed <em>u</em> at angle <em>θ</em> above horizontal, from level ground, with no air resistance:</p>
+<div class="grid">
+<article class="card"><h3>Resolve initial velocity</h3><div class="formula">uₓ = u cos θ</div><div class="formula">uᵧ = u sin θ</div><p class="muted">These are the horizontal and vertical components of the starting velocity.</p></article>
+<article class="card"><h3>Position after time t</h3><div class="formula">x = (u cos θ)t</div><div class="formula">y = (u sin θ)t − ½gt²</div><p class="muted">Use these to find where the projectile is at a particular time.</p></article>
+<article class="card"><h3>Velocity after time t</h3><div class="formula">vₓ = u cos θ</div><div class="formula">vᵧ = u sin θ − gt</div><p class="muted">Horizontal velocity is constant; vertical velocity changes steadily.</p></article>
+<article class="card"><h3>At the highest point</h3><div class="formula">vᵧ = 0</div><div class="formula">t↑ = (u sin θ)/g</div><p class="muted">Only the vertical component is zero. Horizontal velocity is still present.</p></article>
+<article class="card"><h3>Total time of flight</h3><div class="formula">T = (2u sin θ)/g</div><p class="muted">This applies when the projectile lands at the same height from which it was launched.</p></article>
+<article class="card"><h3>Maximum height and range</h3><div class="formula">H = (u² sin² θ)/(2g)</div><div class="formula">R = (u² sin 2θ)/g</div><p class="muted">Maximum height is measured above the launch level; range is horizontal distance.</p></article></div>
+<div class="callout">Use <strong>g ≈ 9.8 m/s²</strong> near Earth's surface (sometimes school problems use 10 m/s²). Keep units consistent.</div></section>
+<section class="reveal"><span class="section-kicker">04 · At a glance</span><h2>What happens during the flight?</h2><div class="table-wrap"><table><thead><tr><th>Stage</th><th>Vertical velocity</th><th>Horizontal velocity</th><th>Acceleration</th></tr></thead><tbody><tr><td>Just after launch</td><td>Upward</td><td>Forward</td><td>Downward, g</td></tr><tr><td>Rising</td><td>Decreasing upward</td><td>Constant</td><td>Downward, g</td></tr><tr><td>Highest point</td><td>Zero for an instant</td><td>Constant, non-zero</td><td>Downward, g</td></tr><tr><td>Falling</td><td>Downward, increasing in magnitude</td><td>Constant</td><td>Downward, g</td></tr></tbody></table></div></section>
+<section class="reveal"><span class="section-kicker">05 · Worked example</span><h2>Solve it step by step</h2><div class="card"><p><strong>Question:</strong> A ball is projected from level ground at 20 m/s at an angle of 30° to the horizontal. Find its time of flight, maximum height and horizontal range. Take g = 10 m/s².</p>
+<div class="example-step"><span class="number">1</span><strong>Write the given values</strong><p class="muted">u = 20 m/s, θ = 30°, g = 10 m/s²</p></div>
+<div class="example-step"><span class="number">2</span><strong>Find the time of flight</strong><div class="formula">T = 2u sin θ / g = (2 × 20 × 0.5) / 10 = 2 s</div></div>
+<div class="example-step"><span class="number">3</span><strong>Find the maximum height</strong><div class="formula">H = u² sin² θ / 2g = (400 × 0.25) / 20 = 5 m</div></div>
+<div class="example-step"><span class="number">4</span><strong>Find the horizontal range</strong><div class="formula">R = u² sin 2θ / g = 400 × sin 60° / 10 ≈ 34.6 m</div></div>
+<div class="callout"><strong>Final answers:</strong> Time of flight = 2 s; maximum height = 5 m; horizontal range ≈ 34.6 m.</div></div></section>
+<section class="reveal"><span class="section-kicker">06 · Key ideas</span><h2>Facts worth remembering</h2><div class="grid">
+<article class="card"><h3>Parabolic path</h3><p class="muted">The ideal trajectory is a parabola because horizontal position changes uniformly with time while vertical position changes quadratically with time.</p></article>
+<article class="card"><h3>Complementary angles</h3><p class="muted">For the same launch speed and level landing, angles θ and (90° − θ) give the same range in the ideal model.</p></article>
+<article class="card"><h3>Maximum range</h3><p class="muted">On level ground, the range is greatest at 45° for a fixed launch speed, if air resistance is ignored.</p></article>
+<article class="card"><h3>Mass does not appear</h3><p class="muted">In the ideal model, objects launched with the same initial velocity have the same trajectory regardless of mass.</p></article></div>
+<div class="callout"><strong>Limits of the model:</strong> Real objects experience air resistance and may be affected by wind, spin, and changes in air density. The simple equations are an approximation.</div></section>
+<section class="reveal" id="quiz"><span class="section-kicker">07 · Check your understanding</span><h2>Quick knowledge check</h2><div class="card"><div id="question" style="font-weight:750;font-size:18px">At the highest point of an ideal projectile's path, which statement is correct?</div><div id="options"></div><div id="feedback" aria-live="polite"></div><button class="btn primary" id="next" style="display:none;cursor:pointer">Next question →</button><p class="muted" id="score" style="font-size:13px">Question 1 of 5</p></div></section>
+</main>
+<footer><div class="wrap">PHYSICS / LAB · Projectile Motion Study Guide<br>Learn the model, understand the assumptions, and practise the equations.</div></footer>
+<script>
+(()=> {
+const canvas=document.getElementById('stars'),ctx=canvas.getContext('2d');let stars=[];
+function size(){canvas.width=innerWidth*devicePixelRatio;canvas.height=innerHeight*devicePixelRatio;ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);stars=Array.from({length:75},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight,r:Math.random()*1.5+.3,s:Math.random()*.18+.04}))}
+function paint(){ctx.clearRect(0,0,innerWidth,innerHeight);let scroll=scrollY;for(const p of stars){let y=(p.y-scroll*p.s*.5)%(innerHeight+10);if(y<0)y+=innerHeight+10;ctx.beginPath();ctx.arc(p.x,y,p.r,0,Math.PI*2);ctx.fillStyle='rgba(174,226,255,.7)';ctx.fill() }requestAnimationFrame(paint)}
+size();addEventListener('resize',size);requestAnimationFrame(paint);
+const progress=document.getElementById('progress'),glow=document.getElementById('glow');
+addEventListener('scroll',()=>{let max=document.documentElement.scrollHeight-innerHeight;progress.style.width=(max?scrollY/max*100:0)+'%';glow.style.setProperty('--scroll',(scrollY*.12)+'px')},{passive:true});
+const observer=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');observer.unobserve(e.target)}}),{threshold:.12});document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
+const qs=[
+{q:"At the highest point of an ideal projectile's path, which statement is correct?",o:["Both velocity components are zero","Vertical velocity is zero; horizontal velocity remains constant","Acceleration becomes zero"],a:1,e:"Gravity still acts at the highest point. Only the vertical component of velocity is momentarily zero."},
+{q:"Which quantity remains constant during ideal projectile motion?",o:["Vertical velocity","Horizontal velocity","Vertical position"],a:1,e:"With no horizontal acceleration, horizontal velocity remains constant."},
+{q:"What is the direction of acceleration throughout the flight?",o:["Always downward","Forward along the path","Zero at the highest point"],a:0,e:"Gravity gives a constant downward acceleration, including at the highest point."},
+{q:"For a projectile launched and landing at the same height, which angle gives maximum range?",o:["30°","45°","60°"],a:1,e:"The range is maximum at 45° in the ideal level-ground model."},
+{q:"If gravity increases while launch speed and angle stay the same, what happens to flight time?",o:["It increases","It stays the same","It decreases"],a:2,e:"T = 2u sinθ / g, so a larger g gives a shorter flight time."}
+];let qi=0,score=0,answered=false;
+function render(){let q=qs[qi];document.getElementById('question').textContent=q.q;let box=document.getElementById('options');box.innerHTML='';q.o.forEach((v,i)=>{let b=document.createElement('button');b.className='quiz-option';b.textContent=v;b.onclick=()=>choose(i);box.appendChild(b)});document.getElementById('feedback').textContent='';document.getElementById('next').style.display='none';document.getElementById('score').textContent=`Question ${qi+1} of ${qs.length} · Score ${score}`;answered=false}
+function choose(i){if(answered)return;answered=true;let q=qs[qi],buttons=document.querySelectorAll('.quiz-option');buttons[q.a].classList.add('correct');if(i===q.a){score++;document.getElementById('feedback').textContent='Correct! '+q.e}else{buttons[i].classList.add('wrong');document.getElementById('feedback').textContent='Not quite. '+q.e}document.getElementById('score').textContent=`Question ${qi+1} of ${qs.length} · Score ${score}`;let n=document.getElementById('next');n.style.display='inline-block';n.textContent=qi===qs.length-1?'See results →':'Next question →'}
+document.getElementById('next').onclick=()=>{if(qi<qs.length-1){qi++;render()}else{document.getElementById('question').textContent=`You scored ${score} out of ${qs.length}!`;document.getElementById('options').innerHTML='';document.getElementById('feedback').textContent=score===5?'Excellent work — you have a strong grasp of the basics.':'Good practice! Review the sections above and try again.';document.getElementById('next').style.display='none';document.getElementById('score').textContent='Quiz complete';qi=0;score=0;setTimeout(render,5000)}};render();
+})();
+</script></body></html>
