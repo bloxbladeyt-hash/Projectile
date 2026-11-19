@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>3D Projectile Motion Lab</title>
+<style>
+:root{--bg:#07111f;--panel:#101e30;--line:#263b55;--cyan:#42d9ff;--text:#edf6ff;--muted:#9fb2c9}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui,-apple-system,Segoe UI,sans-serif}
+header{padding:16px 18px 10px;background:linear-gradient(120deg,#102b45,#07111f)}
+h1{font-size:21px;margin:0 0 4px}header p{margin:0;color:var(--muted);font-size:13px}
+#stage{height:46vh;min-height:290px;position:relative;background:radial-gradient(ellipse at 50% 35%,#1a3550,#07111f 75%);overflow:hidden}
+canvas{display:block;width:100%;height:100%;touch-action:pan-y}
+.hint{position:absolute;left:12px;top:10px;color:#b8d0e8;font-size:11px;background:#07111fb9;padding:6px 9px;border:1px solid #29425e;border-radius:8px}
+main{padding:12px;max-width:900px;margin:auto}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:13px;margin-bottom:11px}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.control label{display:flex;justify-content:space-between;gap:8px;font-size:13px;color:#c8d9ea}
+.control output{color:var(--cyan);font-weight:700;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--cyan);margin:9px 0 0}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}
+button{border:1px solid #34516f;background:#1b3450;color:var(--text);padding:10px 14px;border-radius:9px;font-weight:650}
+button.primary{background:#087eaa;border-color:#20bce9}button:active{transform:scale(.98)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:#0a1726;border:1px solid #20354d;border-radius:10px;padding:9px}
+.stat small{display:block;color:var(--muted);font-size:11px}.stat strong{font-size:17px;color:#f4fbff;font-variant-numeric:tabular-nums}
+.legend{display:flex;gap:13px;flex-wrap:wrap;color:var(--muted);font-size:12px;margin-top:10px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+h2{font-size:15px;margin:0 0 10px}.note{color:var(--muted);font-size:12px;line-height:1.5;margin:9px 0 0}
+@media(max-width:430px){.controls{gap:9px}.stat strong{font-size:15px}.panel{padding:11px}}
+</style>
+</head>
+<body>
+<header><h1>🚀 3D Projectile Motion Lab</h1><p>Explore how launch speed, angle and gravity change a projectile's path.</p></header>
+<div id="stage"><div class="hint">Drag to orbit · Pinch to zoom</div><div id="loadError" style="display:none;position:absolute;inset:55px 18px auto;background:#401d2a;color:#fff;padding:12px;border-radius:10px;font-size:13px">3D graphics could not load. Check your internet connection, then reload this page.</div></div>
+<main>
+<section class="panel">
+<h2>Simulation controls</h2>
+<div class="controls">
+ <div class="control"><label for="speed">Launch speed <output id="speedVal">20 m/s</output></label><input id="speed" type="range" min="5" max="50" value="20" step="1"></div>
+ <div class="control"><label for="angle">Launch angle <output id="angleVal">45°</output></label><input id="angle" type="range" min="5" max="85" value="45" step="1"></div>
+ <div class="control"><label for="gravity">Gravity <output id="gravityVal">9.8 m/s²</output></label><input id="gravity" type="range" min="1" max="25" value="9.8" step=".1"></div>
+ <div class="control"><label for="scale">Simulation pace <output id="scaleVal">1.0×</output></label><input id="scale" type="range" min=".2" max="2" value="1" step=".1"></div>
+</div>
+<div class="actions"><button class="primary" id="play">▶ Play</button><button id="reset">↺ Reset</button><button id="view">◎ Reset view</button></div>
+<p class="note">Ideal model: air resistance is ignored. The ball is shown in 3D, while its motion follows the standard 2D projectile equations.</p>
+</section>
+<section class="panel">
+<h2>Live measurements</h2>
+<div class="stats">
+ <div class="stat"><small>Horizontal range</small><strong id="range">— m</strong></div>
+ <div class="stat"><small>Maximum height</small><strong id="height">— m</strong></div>
+ <div class="stat"><small>Flight time</small><strong id="flight">— s</strong></div>
+ <div class="stat"><small>Horizontal velocity</small><strong id="vx">— m/s</strong></div>
+ <div class="stat"><small>Vertical velocity</small><strong id="vy">— m/s</strong></div>
+ <div class="stat"><small>Elapsed time</small><strong id="elapsed">0.00 s</strong></div>
+</div>
+<div class="legend"><span><i class="dot" style="background:#42d9ff"></i>Trajectory</span><span><i class="dot" style="background:#ffcc55"></i>Velocity vector</span><span><i class="dot" style="background:#ff6688"></i>Gravity</span></div>
+</section>
+</main>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
+const stage=document.getElementById('stage');
+window.addEventListener('error',()=>{const e=document.getElementById('loadError');if(e)e.style.display='block'});
+window.addEventListener('unhandledrejection',()=>{const e=document.getElementById('loadError');if(e)e.style.display='block'});
+const scene=new THREE.Scene(); scene.fog=new THREE.Fog(0x07111f,45,130);
+const camera=new THREE.PerspectiveCamera(48,stage.clientWidth/stage.clientHeight,.1,300);
+camera.position.set(24,17,29);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setSize(stage.clientWidth,stage.clientHeight); renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap; renderer.outputColorSpace=THREE.SRGBColorSpace;
+stage.appendChild(renderer.domElement);
+const orbit=new OrbitControls(camera,renderer.domElement); orbit.enableDamping=true; orbit.target.set(12,4,0); orbit.maxPolarAngle=Math.PI*.48;
+scene.add(new THREE.HemisphereLight(0xb9e2ff,0x253348,2.0));
+const sun=new THREE.DirectionalLight(0xffffff,2.5);sun.position.set(-12,25,15);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);scene.add(sun);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(220,90),new THREE.MeshStandardMaterial({color:0x14283a,roughness:.92,metalness:.08}));floor.rotation.x=-Math.PI/2;floor.position.set(75,-.08,0);floor.receiveShadow=true;scene.add(floor);
+const grid=new THREE.GridHelper(180,90,0x3b6686,0x244158);grid.position.set(75,.005,0);scene.add(grid);
+const axes=new THREE.AxesHelper(3);axes.position.set(0,.02,0);scene.add(axes);
+const ball=new THREE.Mesh(new THREE.SphereGeometry(.42,40,32),new THREE.MeshPhysicalMaterial({color:0x23bce9,metalness:.28,roughness:.2,clearcoat:1,clearcoatRoughness:.08}));ball.castShadow=true;scene.add(ball);
+const trailMat=new THREE.LineBasicMaterial({color:0x42d9ff,transparent:true,opacity:.95});
+let trail=null; const markerMat=new THREE.MeshBasicMaterial({color:0x42d9ff});
+const launch=new THREE.Mesh(new THREE.CylinderGeometry(.16,.2,.55,24),new THREE.MeshStandardMaterial({color:0x7d93a9,metalness:.7,roughness:.35}));launch.rotation.z=Math.PI/2;launch.position.set(0,.3,0);scene.add(launch);
+const groundMark=new THREE.Mesh(new THREE.CircleGeometry(.65,32),new THREE.MeshBasicMaterial({color:0xffcc55,transparent:true,opacity:.6}));groundMark.rotation.x=-Math.PI/2;groundMark.position.y=.02;scene.add(groundMark);
+let velocityArrow=null,gravityArrow=null;
+const $=id=>document.getElementById(id);
+const params=()=>({v:+$('speed').value,a:+$('angle').value*Math.PI/180,g:+$('gravity').value,pace:+$('scale').value});
+let t=0,running=false,last=0,flight=0,range=0,maxH=0;
+function calc(){const p=params(),vx=p.v*Math.cos(p.a),vy=p.v*Math.sin(p.a);flight=2*vy/p.g;range=vx*flight;maxH=vy*vy/(2*p.g);return {...p,vx,vy};}
+function posAt(time,p){return new THREE.Vector3(p.vx*time,Math.max(0,p.vy*time-.5*p.g*time*time),0)}
+function clearTrail(){if(trail){scene.remove(trail);trail.geometry.dispose();trail=null}}
+function arrow(origin,dir,color,head=.35){return new THREE.ArrowHelper(dir.clone().normalize(),origin,Math.max(.01,dir.length()),color,head,head*.65)}
+function rebuild(){
+ const p=calc(); $('speedVal').textContent=p.v+' m/s';$('angleVal').textContent=$('angle').value+'°';$('gravityVal').textContent=p.g.toFixed(1)+' m/s²';$('scaleVal').textContent=p.pace.toFixed(1)+'×';
+ $('range').textContent=range.toFixed(2)+' m';$('height').textContent=maxH.toFixed(2)+' m';$('flight').textContent=flight.toFixed(2)+' s';$('vx').textContent=p.vx.toFixed(2)+' m/s';$('vy').textContent=p.vy.toFixed(2)+' m/s';
+ clearTrail();const pts=[];for(let i=0;i<=100;i++)pts.push(posAt(flight*i/100,p).setZ(0));const geo=new THREE.BufferGeometry().setFromPoints(pts);trail=new THREE.Line(geo,trailMat);scene.add(trail);
+ ball.position.set(0,.42,0);groundMark.position.x=range; t=0; $('elapsed').textContent='0.00 s';
+ if(velocityArrow)scene.remove(velocityArrow);if(gravityArrow)scene.remove(gravityArrow);
+ velocityArrow=arrow(new THREE.Vector3(0,.42,0),new THREE.Vector3(p.vx*.16,p.vy*.16,0),0xffcc55,.3);scene.add(velocityArrow);
+ gravityArrow=arrow(new THREE.Vector3(0,1.5,0),new THREE.Vector3(0,-1.15,0),0xff6688,.25);scene.add(gravityArrow);
+ camera.position.set(Math.max(20,range*.65),Math.max(15,maxH*1.6+8),Math.max(24,range*.65));orbit.target.set(range*.48,maxH*.45,0);orbit.update();
+}
+function updateBall(){const p=calc(),q=posAt(t,p);ball.position.set(q.x,q.y+.42,0);if(velocityArrow)scene.remove(velocityArrow);const vy=p.vy-p.g*t;velocityArrow=arrow(ball.position,new THREE.Vector3(p.vx*.16,vy*.16,0),0xffcc55,.3);scene.add(velocityArrow);$('elapsed').textContent=t.toFixed(2)+' s';$('vy').textContent=vy.toFixed(2)+' m/s';}
+function animate(now){requestAnimationFrame(animate);if(running){if(!last)last=now;const dt=Math.min((now-last)/1000,.05);t+=dt*params().pace;if(t>=flight){t=flight;running=false;$('play').textContent='▶ Play';}updateBall();}last=now;orbit.update();renderer.render(scene,camera)}
+$('play').addEventListener('click',()=>{if(!running&&t>=flight){t=0;}running=!running;last=0;$('play').textContent=running?'Ⅱ Pause':'▶ Play';if(running)updateBall()});
+$('reset').addEventListener('click',()=>{running=false;$('play').textContent='▶ Play';rebuild()});
+$('view').addEventListener('click',()=>{const p=calc();camera.position.set(Math.max(20,range*.65),Math.max(15,maxH*1.6+8),Math.max(24,range*.65));orbit.target.set(range*.48,maxH*.45,0);orbit.update()});
+['speed','angle','gravity','scale'].forEach(id=>$(id).addEventListener('input',()=>{running=false;$('play').textContent='▶ Play';rebuild()}));
+const resize=()=>{const w=stage.clientWidth,h=stage.clientHeight;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h)};new ResizeObserver(resize).observe(stage);
+rebuild();requestAnimationFrame(animate);
+</script>
+</body></html>
