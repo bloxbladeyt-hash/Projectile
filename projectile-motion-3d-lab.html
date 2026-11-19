@@ -32,7 +32,7 @@ h2{font-size:15px;margin:0 0 10px}.note{color:var(--muted);font-size:12px;line-h
 </head>
 <body>
 <header><h1>🚀 3D Projectile Motion Lab</h1><p>Explore how launch speed, angle and gravity change a projectile's path.</p></header>
-<div id="stage"><div class="hint">Drag to orbit · Pinch to zoom</div></div>
+<div id="stage"><div class="hint">Drag to orbit · Pinch to zoom</div><div id="loadError" style="display:none;position:absolute;inset:55px 18px auto;background:#401d2a;color:#fff;padding:12px;border-radius:10px;font-size:13px">3D graphics could not load. Check your internet connection, then reload this page.</div></div>
 <main>
 <section class="panel">
 <h2>Simulation controls</h2>
@@ -58,10 +58,15 @@ h2{font-size:15px;margin:0 0 10px}.note{color:var(--muted);font-size:12px;line-h
 <div class="legend"><span><i class="dot" style="background:#42d9ff"></i>Trajectory</span><span><i class="dot" style="background:#ffcc55"></i>Velocity vector</span><span><i class="dot" style="background:#ff6688"></i>Gravity</span></div>
 </section>
 </main>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}
+</script>
 <script type="module">
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+import * as THREE from 'three';
 import {OrbitControls} from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
 const stage=document.getElementById('stage');
+window.addEventListener('error',()=>{const e=document.getElementById('loadError');if(e)e.style.display='block'});
+window.addEventListener('unhandledrejection',()=>{const e=document.getElementById('loadError');if(e)e.style.display='block'});
 const scene=new THREE.Scene(); scene.fog=new THREE.Fog(0x07111f,45,130);
 const camera=new THREE.PerspectiveCamera(48,stage.clientWidth/stage.clientHeight,.1,300);
 camera.position.set(24,17,29);
